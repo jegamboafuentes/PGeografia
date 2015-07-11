@@ -1,0 +1,138 @@
+apply {
+    plugin 'java'
+    plugin 'maven'
+}
+
+group = projectGroup
+archivesBaseName = projectArchivesBaseName
+version = projectVersion
+
+description = projectDescription
+sourceCompatibility = projectSourceCompatibility
+targetCompatibility = projectTargetCompatibility
+
+[compileJava, compileTestJava]*.options*.encoding = projectEncoding
+
+ext {
+    mainClass = projectMainClass
+    
+    archivaUploadCredential = {
+        authentication(
+            userName: archivaUser, 
+            password: archivaPassword)
+    }
+}
+
+repositories {
+    maven {
+        url libsRepository
+        
+        credentials {
+            username archivaUser
+            password archivaPassword
+        }
+    }
+    
+    maven {
+        url releasesRepository
+        
+        credentials {
+            username archivaUser
+            password archivaPassword
+        }
+    }
+    
+    maven {
+        url snapshotRepository
+        
+        credentials {
+            username archivaUser
+            password archivaPassword
+        }
+    }
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(
+                url: releasesRepository, project.ext.archivaUploadCredential)        
+            snapshotRepository(
+                url: snapshotRepository, project.ext.archivaUploadCredential)
+        }
+    }
+}
+
+dependencies {
+    compile "aopalliance:aopalliance:$aopallianceVersion",
+            "commons-logging:commons-logging:$commonsLoggingVersion",
+    
+            "org.springframework:spring-aop:$springVersion",
+            "org.springframework:spring-beans:$springVersion",
+            "org.springframework:spring-context:$springVersion",
+            "org.springframework:spring-core:$springVersion",
+            "org.springframework:spring-expression:$springVersion",
+            "org.springframework:spring-jdbc:$springVersion",
+            "org.springframework:spring-tx:$springVersion",    
+                        
+            "log4j:log4j:$log4jVersion",
+            "org.apache.commons:commons-exec:$commonsExecVersion",    
+            "c3p0:c3p0:$c3p0Version",
+            "net.sf.jt400:jt400:$jt400Version",
+            "com.oracle:ucp:$ucpVersion",
+			
+            "com.baz.scc.commons:cjcrl-baz-commons-base:$bazCommonsBaseVersion",
+            "com.baz.scc.commons:cjcrl-gams-commons:$gamsCommonsVersion",
+            "com.baz.scc.wsdl.client:cjcrl-filas-masivo:$filasMasivoVersion"
+    
+    testCompile "junit:junit:$junitVersion",
+                "org.springframework:spring-test:$springVersion",
+                "org.hamcrest:hamcrest-core:$hamcrestCoreVersion"
+}
+
+jar {   
+    manifest {
+        attributes 'Implementation-Title': projectTitle, 
+                   'Implementation-Version': projectVersion, 
+                   'Main-Class': projectMainClass,
+                   'Class-Path': configurations.runtime.files.collect { "libs/$it.name" }.join(' ')
+    }
+}
+
+javadoc {
+    options.encoding = projectEncoding
+}
+
+task javadocJar(type: Jar, dependsOn: 'javadoc') {
+    classifier = 'javadoc'
+    
+    from javadoc.destinationDir    
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+test {
+    testLogging {
+        events 'failed'
+        exceptionFormat 'short'
+        
+        debug {
+            events 'started', 'skipped', 'failed'
+            exceptionFormat 'full'
+        }
+        
+        error {
+            events 'skipped', 'failed'
+            exceptionFormat 'full'
+        }
+    }
+}
